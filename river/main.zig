@@ -49,6 +49,11 @@ const usage: []const u8 =
 
 pub var server: Server = undefined;
 
+
+fn initwatcher(pid: os.pid_t) void {
+    _ = os.waitpid(pid, 0);
+}
+
 pub fn main() anyerror!void {
     const result = flags.parser([*:0]const u8, &.{
         .{ .name = "h", .kind = .boolean },
@@ -133,6 +138,9 @@ pub fn main() anyerror!void {
         // Since the child has called setsid, the pid is the pgid
         break :blk pid;
     } else null;
+
+    const initthread = if (child_pgid) |pgid| try std.Thread.spawn(.{}, initwatcher, .{pgid}) else null;
+
     defer if (child_pgid) |pgid| os.kill(-pgid, os.SIG.TERM) catch |err| {
         log.err("failed to kill init process group: {s}", .{@errorName(err)});
     };
@@ -142,6 +150,7 @@ pub fn main() anyerror!void {
     server.wl_server.run();
 
     log.info("shutting down", .{});
+    initthread.?.join();
 }
 
 fn defaultInitPath() !?[:0]const u8 {
