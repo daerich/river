@@ -51,7 +51,9 @@ pub var server: Server = undefined;
 
 
 fn initwatcher(pid: os.pid_t) void {
+    log.debug("Waiting on init exe {}", .{pid});
     _ = os.waitpid(pid, 0);
+    log.debug("Init exe {} successfully cleaned up", .{pid});
 }
 
 pub fn main() anyerror!void {
@@ -149,8 +151,8 @@ pub fn main() anyerror!void {
 
     server.wl_server.run();
 
-    log.info("shutting down", .{});
     initthread.?.join();
+    log.info("shutting down", .{});
 }
 
 fn defaultInitPath() !?[:0]const u8 {
